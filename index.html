@@ -30,6 +30,8 @@
           alert("名前は0文字以上20文字以下の英数字で設定してください。");
         }else if(!isFinite(score) || score.length == 0){
           alert("数字を入力してください。")
+        }else if(parseInt(score) >= 30000){
+          alert("ちゃんとやれ")
         }else{
           var flag = 0;
           for(var i=0;i<results.length;i++){
