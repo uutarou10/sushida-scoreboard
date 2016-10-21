@@ -19,8 +19,7 @@
       firebase.initializeApp(config);
     </script>
     <script>
-      var names = [];
-      var results = {};
+      var results = [];
       var db = firebase.database();
       var scoreboard = db.ref("/scores");
 
@@ -29,38 +28,43 @@
         var score = document.getElementById("score").value;
         if(isFinite(name) || name.length <= 0 || name.length >= 20){
           alert("名前は0文字以上20文字以下の英数字で設定してください。");
-        }else if(!isFinite(score)){
+        }else if(!isFinite(score) || score.length == 0){
           alert("数字を入力してください。")
         }else{
-          scoreboard.push({"name":name,"score":score});
+          var flag = 0;
+          for(var i=0;i<results.length;i++){
+            if(results[i]["name"] == name || results[i]["score"] > score){
+              flag = 1;
+              break
+            }
+          }
+          if(flag == 0){
+            scoreboard.push({"name":name,"score":score});
+          }
         }
       }
 
       function table_display(){
-        for(var i=0;i<names.length-1;i++){
+        for(var i=0;i<results.length-1;i++){
           $('#d tr:last').remove();
         }
 
-        var ranking = 1
-        for(var i in results){
-          var html = '<tr><td>' + ranking + '</td><td>' + i + '</td><td>' + results[i] + '</td></tr>';
+        results.sort(function(a,b){
+          if(a["score"] < b["score"]){return 1;}
+          if(a["score"] > b["score"]){return -1;}
+          return 0
+        });
+
+        for(var i=0;i<results.length;i++){
+          var html = '<tr><td>' + (i+1) + '</td><td>' + results[i]["name"] + '</td><td>' + results[i]["score"] + '</td></tr>';
           $('#d').append(html);
-          ranking++;
         }
       }
 
       scoreboard.on("child_added", function(snapshot) {
         var name = snapshot.val().name;
         var score = snapshot.val().score;
-        if(name in results){
-          if(results[name] < score){
-            names.push(name);
-            results[name] = score;
-          }
-        }else{
-          names.push(name);
-          results[name] = score;
-        }
+        results.push({"name":name,"score":parseInt(score)});
         table_display();
       });
 
