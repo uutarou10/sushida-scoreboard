@@ -17,13 +17,24 @@
       });
 
       var results = [];
-      var scoreboard = firebase.database().ref("/scores");
+      var scoreboard = firebase.database().ref("/test");
 
-      scoreboard.on("child_added", snapshot => {
+      scoreboard.on("value", snapshot => {
         results.push({
           "name": snapshot.val().name,
           "score": parseInt(snapshot.val().score)
-        });
+          });
+        })
+
+      scoreboard.on("child_added", snapshot => {
+        var results = {}
+        scoreboard.on("value", snapshot => {
+            results.push({
+              "name": snapshot.val().name,
+              "score": parseInt(snapshot.val().score)
+            });
+            })})
+
         $('#d > tbody').html(results.sort((a, b) => b["score"] - a["score"]).map((x, i) => '<tr><td>' + (i+1) + '</td><td>' + x["name"] + '</td><td>' + x["score"] + '</td></tr>').reduce((x, y) => x + y));
       });
 
@@ -36,7 +47,9 @@
           }else if(!isFinite(score) || score.length == 0){
             alert("数字を入力してください。")
           }else{
-            scoreboard.push({"name":name.replace(/</g, '&lt;').replace(/>/g, '&gt;'), "score":score});
+            db = "/test/" + name
+            var sb = firebase.database().ref(db);
+            sb.set({"name":name.replace(/</g, '&lt;').replace(/>/g, '&gt;'), "score":score});
             $("#name, #score").val("");
           }
           return false;
