@@ -16,27 +16,35 @@
         messagingSenderId: "352642848526"
       });
 
-      var results = [];
-      var scoreboard = firebase.database().ref("/test");
+      var product = "/product";
+      console.log(location);
+      var scoreboard = firebase.database().ref(product);
 
-      scoreboard.on("value", snapshot => {
-        results.push({
-          "name": snapshot.val().name,
-          "score": parseInt(snapshot.val().score)
-          });
+      function updateScore(){
+        var names = [];
+        var results = [];
+        scoreboard.on("value",snapshot => {
+          names = [];
+          for(var i in snapshot.val()){
+            names.push(i)
+          }
+        });
+
+        names.map(function(element){
+          firebase.database().ref(product + "/"+element).on("value",snapshot => {
+            results.push({
+              "name":snapshot.val().name,
+              "score":snapshot.val().score
+            })
+          })
         })
+        $('#d > tbody').html(results.sort((a, b) => b["score"] - a["score"]).map((x, i) => '<tr><td>' + (i+1) + '</td><td>' + x["name"] + '</td><td>' + x["score"] + '</td></tr>').reduce((x, y) => x + y));
+      }
 
       scoreboard.on("child_added", snapshot => {
-        var results = {}
-        scoreboard.on("value", snapshot => {
-            results.push({
-              "name": snapshot.val().name,
-              "score": parseInt(snapshot.val().score)
-            });
-            })})
-
-        $('#d > tbody').html(results.sort((a, b) => b["score"] - a["score"]).map((x, i) => '<tr><td>' + (i+1) + '</td><td>' + x["name"] + '</td><td>' + x["score"] + '</td></tr>').reduce((x, y) => x + y));
+        updateScore();
       });
+
 
       $(() => $("input[type=submit]").click(() => {
           var name = $("#name").val();
@@ -47,10 +55,11 @@
           }else if(!isFinite(score) || score.length == 0){
             alert("数字を入力してください。")
           }else{
-            db = "/test/" + name
+            db = product + "/" + name;
             var sb = firebase.database().ref(db);
             sb.set({"name":name.replace(/</g, '&lt;').replace(/>/g, '&gt;'), "score":score});
             $("#name, #score").val("");
+            updateScore();
           }
           return false;
         }));
