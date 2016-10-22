@@ -8,73 +8,43 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
     <script src="https://www.gstatic.com/firebasejs/3.5.1/firebase.js"></script>
     <script>
-      // Initialize Firebase
-      var config = {
+      firebase.initializeApp({
         apiKey: "AIzaSyCViBfwskuUtbThHpS9Wj2eqIoRMIKprKE",
         authDomain: "sushida-scoreboard.firebaseapp.com",
         databaseURL: "https://sushida-scoreboard.firebaseio.com",
         storageBucket: "",
         messagingSenderId: "352642848526"
-      };
-      firebase.initializeApp(config);
-    </script>
-    <script>
-      var results = [];
-      var db = firebase.database();
-      var scoreboard = db.ref("/scores");
-
-      function update(){
-        var name = document.getElementById("name").value;
-        var score = document.getElementById("score").value;
-        if(isFinite(name) || name.length <= 0 || name.length >= 20){
-          alert("名前は0文字以上20文字以下の英数字で設定してください。");
-        }else if(!isFinite(score) || score.length == 0){
-          alert("数字を入力してください。")
-        }else if(parseInt(score) >= 30000){
-          alert("ちゃんとやれ")
-        }else{
-          var flag = 0;
-          for(var i=0;i<results.length;i++){
-            if(results[i]["name"] == name || results[i]["score"] > score){
-              flag = 1;
-              break
-            }
-          }
-          if(flag == 0){
-            scoreboard.push({"name":name,"score":score});
-          }
-        }
-      }
-
-      function table_display(){
-        for(var i=0;i<results.length-1;i++){
-          $('#d tr:last').remove();
-        }
-
-        results.sort(function(a,b){
-          if(a["score"] < b["score"]){return 1;}
-          if(a["score"] > b["score"]){return -1;}
-          return 0
-        });
-
-        for(var i=0;i<results.length;i++){
-          var html = '<tr><td>' + (i+1) + '</td><td>' + results[i]["name"] + '</td><td>' + results[i]["score"] + '</td></tr>';
-          $('#d').append(html);
-        }
-      }
-
-      scoreboard.on("child_added", function(snapshot) {
-        var name = snapshot.val().name;
-        var score = snapshot.val().score;
-        results.push({"name":name,"score":parseInt(score)});
-        table_display();
       });
 
+      var results = [];
+      var scoreboard = firebase.database().ref("/scores");
+
+      scoreboard.on("child_added", snapshot => {
+        results.push({
+          "name": snapshot.val().name,
+          "score": parseInt(snapshot.val().score)
+        });
+        $('#d > tbody').html(results.sort((a, b) => b["score"] - a["score"]).map((x, i) => '<tr><td>' + (i+1) + '</td><td>' + x["name"] + '</td><td>' + x["score"] + '</td></tr>').reduce((x, y) => x + y));
+      });
+
+      $(() => $("input[type=submit]").click(() => {
+          var name = $("#name").val();
+          var score = $("#score").val();
+
+          if(isFinite(name) || name.length <= 0 || name.length >= 20){
+            alert("名前は1文字以上20文字以下の英数字で設定してください。");
+          }else if(!isFinite(score) || score.length == 0){
+            alert("数字を入力してください。")
+          }else{
+            scoreboard.push({"name":name.replace(/</g, '&lt;').replace(/>/g, '&gt;'), "score":score});
+            $("#name, #score").val("");
+          }
+          return false;
+        }));
   </script>
   </head>
   <body>
     <h1>🍣寿司打スコアボード🍣</h1><br>
-
 
     <form class="form-inline">
       <div class="form-group">
@@ -85,7 +55,7 @@
         <label>Score</label>
         <input type="text" class="form-control" id="score" placeholder="スコアを入力してください。">
       </div>
-      <button onclick="update()" class="btn btn-primary">スコアボードを更新する。</button>
+      <input type="submit" class="btn btn-primary" value="スコアボードを更新する。">
     </form><br>
 
     <table class="table table-striped table-hover table-boardered" id="d">
@@ -96,8 +66,7 @@
           <th>score</th>
         </tr>
       </thead>
-        <tbody>
-        </tbody>
+      <tbody></tbody>
     </table>
   </body>
 </html>
